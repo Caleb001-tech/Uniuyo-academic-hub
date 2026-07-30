@@ -182,7 +182,8 @@ def get_user_cgpa(username):
 
             
 
-# --- MODERN PREMIUM UI STYLING (UPDATED MOBILE NAVIGATION TARGETING) ---
+        
+# --- MODERN PREMIUM UI STYLING (FIXED MAIN SCREEN MENU BUTTON) ---
 def local_css():
     st.markdown("""
         <style>
@@ -190,73 +191,71 @@ def local_css():
         
         * { font-family: 'Plus Jakarta Sans', sans-serif; }
         
-        /* Dark Gradient Background */
+        /* Dark Gradient Canvas */
         .stApp { 
             background: linear-gradient(135deg, #0b0f19 0%, #111827 50%, #0f172a 100%); 
             color: #f8fafc; 
         }
 
-        /* Remove Top Excess Space */
+        /* Top Gap Padding */
         .block-container {
-            padding-top: 1rem !important;
+            padding-top: 1.2rem !important;
             padding-bottom: 2rem !important;
         }
-        
-        /* TARGET STREAMLIT SIDEBAR TOGGLE BUTTON DIRECTLY */
-        [data-testid="stSidebarCollapseButton"],
-        [data-testid="collapsedControl"],
-        button[data-testid="stHeaderIconButton"] {
+
+        /* FORCE THE MAIN SCREEN MENU BUTTON (WHEN SIDEBAR IS CLOSED) TO BE A LARGE PURPLE BUTTON */
+        div[data-testid="collapsedControl"] {
+            top: 12px !important;
+            left: 12px !important;
+            z-index: 999999 !important;
+        }
+
+        div[data-testid="collapsedControl"] button {
             background: linear-gradient(90deg, #6366f1 0%, #a855f7 100%) !important;
             color: #ffffff !important;
             border-radius: 12px !important;
             padding: 8px 16px !important;
-            border: 1px solid rgba(255, 255, 255, 0.2) !important;
-            box-shadow: 0 4px 14px rgba(99, 102, 241, 0.5) !important;
+            border: 1px solid rgba(255, 255, 255, 0.3) !important;
+            box-shadow: 0 4px 15px rgba(99, 102, 241, 0.6) !important;
             display: flex !important;
             align-items: center !important;
-            justify-content: center !important;
-            margin-top: 5px !important;
-            margin-left: 5px !important;
-            width: auto !important;
-            height: auto !important;
+            gap: 6px !important;
+            min-width: 110px !important;
+            height: 40px !important;
         }
 
-        /* Make the icon bigger and add prominent text label next to it */
-        [data-testid="stSidebarCollapseButton"]::after,
-        [data-testid="collapsedControl"]::after {
-            content: " ☰ MENU";
+        /* Replace default SVG icon look with text on main screen */
+        div[data-testid="collapsedControl"] button::after {
+            content: "☰ MENU";
             font-size: 0.85rem !important;
             font-weight: 800 !important;
             color: #ffffff !important;
-            margin-left: 6px !important;
             letter-spacing: 0.05em;
         }
 
-        /* Increase SVG arrow size and force white color */
-        [data-testid="stSidebarCollapseButton"] svg,
-        [data-testid="collapsedControl"] svg {
+        /* Ensure icon arrow stays bright white */
+        div[data-testid="collapsedControl"] button svg {
             fill: #ffffff !important;
             color: #ffffff !important;
-            width: 20px !important;
-            height: 20px !important;
+            width: 18px !important;
+            height: 18px !important;
         }
 
-        /* Mobile Sidebar Width Control (Drawer Size) */
+        /* Sidebar Drawer Styling (When opened) */
         [data-testid="stSidebar"] { 
             background-color: rgba(15, 23, 42, 0.98) !important; 
             border-right: 1px solid rgba(255, 255, 255, 0.1) !important; 
             max-width: 280px !important;
             width: 75vw !important;
         }
-        
-        /* Typography */
+
+        /* General UI Elements */
         h1, h2, h3, h4, h5, h6 { 
             color: #ffffff !important; 
             font-weight: 700 !important;
             letter-spacing: -0.02em;
         }
         
-        /* Glass Cards & Containers */
         .post-box, [data-testid="stForm"], .opp-box {
             background: rgba(30, 41, 59, 0.6) !important;
             backdrop-filter: blur(16px) !important;
@@ -267,7 +266,6 @@ def local_css():
             box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.3) !important;
         }
 
-        /* Accent Buttons */
         .stButton>button, .stDownloadButton>button {
             border-radius: 12px !important; 
             background: linear-gradient(90deg, #6366f1 0%, #a855f7 100%) !important; 
@@ -278,7 +276,6 @@ def local_css():
             box-shadow: 0 4px 14px 0 rgba(99, 102, 241, 0.35) !important;
         }
 
-        /* Form Controls */
         .stTextInput>div>div>input, .stSelectbox>div>div>div, .stTextArea>div>div>textarea, .stNumberInput>div>div>input {
             background-color: rgba(15, 23, 42, 0.7) !important; 
             color: #ffffff !important;
@@ -286,7 +283,6 @@ def local_css():
             border-radius: 10px !important;
         }
 
-        /* Tag Badges */
         .tag-badge { 
             background-color: rgba(99, 102, 241, 0.15); 
             color: #818cf8 !important; 
@@ -297,12 +293,12 @@ def local_css():
             border: 1px solid rgba(99, 102, 241, 0.3); 
         }
 
-        /* Header / Footer Adjustments */
         #MainMenu { visibility: hidden; }
         footer { visibility: hidden; }
         header { background: transparent !important; }
         </style>
     """, unsafe_allow_html=True)
+    
     
                         
     
