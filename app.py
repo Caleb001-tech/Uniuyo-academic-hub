@@ -180,7 +180,9 @@ def get_user_cgpa(username):
     return truncate_gpa(total_points / total_credits)
 
 
-# --- MODERN PREMIUM UI STYLING (MOBILE SIDEBAR & NAV ENHANCEMENTS) ---
+            
+
+# --- MODERN PREMIUM UI STYLING (UPDATED MOBILE NAVIGATION TARGETING) ---
 def local_css():
     st.markdown("""
         <style>
@@ -188,39 +190,58 @@ def local_css():
         
         * { font-family: 'Plus Jakarta Sans', sans-serif; }
         
-        /* Dark Gradient Canvas */
+        /* Dark Gradient Background */
         .stApp { 
             background: linear-gradient(135deg, #0b0f19 0%, #111827 50%, #0f172a 100%); 
             color: #f8fafc; 
         }
 
-        /* 1. Remove Top Space Gap */
+        /* Remove Top Excess Space */
         .block-container {
             padding-top: 1rem !important;
             padding-bottom: 2rem !important;
         }
         
-        /* 2. Make Mobile Navigation Button Obvious ("☰ Menu" Button) */
-        button[data-testid="baseButton-header"] {
+        /* TARGET STREAMLIT SIDEBAR TOGGLE BUTTON DIRECTLY */
+        [data-testid="stSidebarCollapseButton"],
+        [data-testid="collapsedControl"],
+        button[data-testid="stHeaderIconButton"] {
             background: linear-gradient(90deg, #6366f1 0%, #a855f7 100%) !important;
             color: #ffffff !important;
-            border-radius: 20px !important;
-            padding: 6px 16px !important;
+            border-radius: 12px !important;
+            padding: 8px 16px !important;
             border: 1px solid rgba(255, 255, 255, 0.2) !important;
-            box-shadow: 0 4px 12px rgba(99, 102, 241, 0.4) !important;
-            font-weight: 700 !important;
-            font-size: 0.9rem !important;
+            box-shadow: 0 4px 14px rgba(99, 102, 241, 0.5) !important;
+            display: flex !important;
+            align-items: center !important;
+            justify-content: center !important;
+            margin-top: 5px !important;
+            margin-left: 5px !important;
+            width: auto !important;
+            height: auto !important;
         }
 
-        /* Transform tiny arrow icon into visible text/icon */
-        button[data-testid="baseButton-header"]::after {
-            content: " ☰ Navigation";
-            font-size: 0.85rem;
-            font-weight: 700;
-            color: #ffffff;
+        /* Make the icon bigger and add prominent text label next to it */
+        [data-testid="stSidebarCollapseButton"]::after,
+        [data-testid="collapsedControl"]::after {
+            content: " ☰ MENU";
+            font-size: 0.85rem !important;
+            font-weight: 800 !important;
+            color: #ffffff !important;
+            margin-left: 6px !important;
+            letter-spacing: 0.05em;
         }
 
-        /* 3. Reduce Mobile Sidebar Width (Doesn't cover whole screen) */
+        /* Increase SVG arrow size and force white color */
+        [data-testid="stSidebarCollapseButton"] svg,
+        [data-testid="collapsedControl"] svg {
+            fill: #ffffff !important;
+            color: #ffffff !important;
+            width: 20px !important;
+            height: 20px !important;
+        }
+
+        /* Mobile Sidebar Width Control (Drawer Size) */
         [data-testid="stSidebar"] { 
             background-color: rgba(15, 23, 42, 0.98) !important; 
             border-right: 1px solid rgba(255, 255, 255, 0.1) !important; 
@@ -228,14 +249,14 @@ def local_css():
             width: 75vw !important;
         }
         
-        /* Typography Highlights */
+        /* Typography */
         h1, h2, h3, h4, h5, h6 { 
             color: #ffffff !important; 
             font-weight: 700 !important;
             letter-spacing: -0.02em;
         }
         
-        /* Modern Glass Cards */
+        /* Glass Cards & Containers */
         .post-box, [data-testid="stForm"], .opp-box {
             background: rgba(30, 41, 59, 0.6) !important;
             backdrop-filter: blur(16px) !important;
@@ -245,12 +266,8 @@ def local_css():
             border: 1px solid rgba(255, 255, 255, 0.08) !important;
             box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.3) !important;
         }
-        
-        .opp-box { 
-            border-left: 5px solid #6366f1 !important; 
-        }
 
-        /* Gradient Accent Buttons */
+        /* Accent Buttons */
         .stButton>button, .stDownloadButton>button {
             border-radius: 12px !important; 
             background: linear-gradient(90deg, #6366f1 0%, #a855f7 100%) !important; 
@@ -258,16 +275,10 @@ def local_css():
             border: none !important; 
             font-weight: 600 !important; 
             padding: 0.6rem 1.2rem !important; 
-            transition: all 0.3s ease !important;
             box-shadow: 0 4px 14px 0 rgba(99, 102, 241, 0.35) !important;
         }
-        
-        .stButton>button:hover, .stDownloadButton>button:hover { 
-            transform: translateY(-2px) !important; 
-            box-shadow: 0 6px 20px 0 rgba(168, 85, 247, 0.45) !important;
-        }
 
-        /* Form Inputs & Selects */
+        /* Form Controls */
         .stTextInput>div>div>input, .stSelectbox>div>div>div, .stTextArea>div>div>textarea, .stNumberInput>div>div>input {
             background-color: rgba(15, 23, 42, 0.7) !important; 
             color: #ffffff !important;
@@ -286,12 +297,13 @@ def local_css():
             border: 1px solid rgba(99, 102, 241, 0.3); 
         }
 
-        /* Header Styling */
+        /* Header / Footer Adjustments */
         #MainMenu { visibility: hidden; }
         footer { visibility: hidden; }
         header { background: transparent !important; }
         </style>
     """, unsafe_allow_html=True)
+    
                         
     
 
