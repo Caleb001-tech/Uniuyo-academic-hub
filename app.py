@@ -35,7 +35,6 @@ def initialize_db_tables():
     conn = get_connection()
     c = conn.cursor()
     
-    # Core Users Table
     c.execute('''CREATE TABLE IF NOT EXISTS users (
                     id SERIAL PRIMARY KEY, 
                     username TEXT UNIQUE, 
@@ -47,7 +46,6 @@ def initialize_db_tables():
                     points INTEGER DEFAULT 0
                 )''')
 
-    # Task Reminders Table
     c.execute('''CREATE TABLE IF NOT EXISTS tasks (
                     id SERIAL PRIMARY KEY, 
                     username TEXT, 
@@ -59,7 +57,6 @@ def initialize_db_tables():
                     reminded_0d INTEGER DEFAULT 0
                 )''')
 
-    # CGPA & Grades Table
     c.execute('''CREATE TABLE IF NOT EXISTS course_grades (
                     id SERIAL PRIMARY KEY, 
                     username TEXT, 
@@ -68,7 +65,6 @@ def initialize_db_tables():
                     credit INTEGER
                 )''')
 
-    # Resource Center Table
     c.execute('''CREATE TABLE IF NOT EXISTS study_resources (
                     id SERIAL PRIMARY KEY, 
                     uploader TEXT, 
@@ -79,7 +75,6 @@ def initialize_db_tables():
                     timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP
                 )''')
 
-    # Brain Games & Submissions Tables
     c.execute('''CREATE TABLE IF NOT EXISTS brain_games (
                     id SERIAL PRIMARY KEY, 
                     title TEXT, 
@@ -179,11 +174,7 @@ def get_user_cgpa(username):
     if total_credits == 0: return 0.00
     return truncate_gpa(total_points / total_credits)
 
-
-            
-
-        
-# --- MODERN PREMIUM UI STYLING (FIXED MAIN SCREEN MENU BUTTON) ---
+# --- MODERN UI STYLING ---
 def local_css():
     st.markdown("""
         <style>
@@ -197,65 +188,35 @@ def local_css():
             color: #f8fafc; 
         }
 
-        /* Top Gap Padding */
+        /* Top Padding Adjustment */
         .block-container {
-            padding-top: 1.2rem !important;
+            padding-top: 1rem !important;
             padding-bottom: 2rem !important;
         }
 
-        /* FORCE THE MAIN SCREEN MENU BUTTON (WHEN SIDEBAR IS CLOSED) TO BE A LARGE PURPLE BUTTON */
-        div[data-testid="collapsedControl"] {
-            top: 12px !important;
-            left: 12px !important;
-            z-index: 999999 !important;
+        /* Hide Default Sidebar Completely for Clean Mobile View */
+        [data-testid="stSidebar"], [data-testid="collapsedControl"] {
+            display: none !important;
         }
 
-        div[data-testid="collapsedControl"] button {
-            background: linear-gradient(90deg, #6366f1 0%, #a855f7 100%) !important;
-            color: #ffffff !important;
-            border-radius: 12px !important;
-            padding: 8px 16px !important;
-            border: 1px solid rgba(255, 255, 255, 0.3) !important;
-            box-shadow: 0 4px 15px rgba(99, 102, 241, 0.6) !important;
-            display: flex !important;
-            align-items: center !important;
-            gap: 6px !important;
-            min-width: 110px !important;
-            height: 40px !important;
+        /* Modern Custom Nav Card */
+        .nav-card {
+            background: rgba(30, 41, 59, 0.7) !important;
+            backdrop-filter: blur(12px) !important;
+            padding: 16px 20px !important;
+            border-radius: 16px !important;
+            border: 1px solid rgba(99, 102, 241, 0.3) !important;
+            margin-bottom: 20px !important;
         }
 
-        /* Replace default SVG icon look with text on main screen */
-        div[data-testid="collapsedControl"] button::after {
-            content: "☰ MENU";
-            font-size: 0.85rem !important;
-            font-weight: 800 !important;
-            color: #ffffff !important;
-            letter-spacing: 0.05em;
-        }
-
-        /* Ensure icon arrow stays bright white */
-        div[data-testid="collapsedControl"] button svg {
-            fill: #ffffff !important;
-            color: #ffffff !important;
-            width: 18px !important;
-            height: 18px !important;
-        }
-
-        /* Sidebar Drawer Styling (When opened) */
-        [data-testid="stSidebar"] { 
-            background-color: rgba(15, 23, 42, 0.98) !important; 
-            border-right: 1px solid rgba(255, 255, 255, 0.1) !important; 
-            max-width: 280px !important;
-            width: 75vw !important;
-        }
-
-        /* General UI Elements */
+        /* Typography Highlights */
         h1, h2, h3, h4, h5, h6 { 
             color: #ffffff !important; 
             font-weight: 700 !important;
             letter-spacing: -0.02em;
         }
         
+        /* Glass Cards */
         .post-box, [data-testid="stForm"], .opp-box {
             background: rgba(30, 41, 59, 0.6) !important;
             backdrop-filter: blur(16px) !important;
@@ -266,6 +227,7 @@ def local_css():
             box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.3) !important;
         }
 
+        /* Gradient Accent Buttons */
         .stButton>button, .stDownloadButton>button {
             border-radius: 12px !important; 
             background: linear-gradient(90deg, #6366f1 0%, #a855f7 100%) !important; 
@@ -276,6 +238,7 @@ def local_css():
             box-shadow: 0 4px 14px 0 rgba(99, 102, 241, 0.35) !important;
         }
 
+        /* Inputs */
         .stTextInput>div>div>input, .stSelectbox>div>div>div, .stTextArea>div>div>textarea, .stNumberInput>div>div>input {
             background-color: rgba(15, 23, 42, 0.7) !important; 
             color: #ffffff !important;
@@ -298,16 +261,12 @@ def local_css():
         header { background: transparent !important; }
         </style>
     """, unsafe_allow_html=True)
-    
-    
-                        
-    
 
 # --- APP INITIALIZATION ---
 try:
     initialize_db_tables()
 except Exception as e:
-    st.error(f"Database connection error. Verify DB_URL in Secrets. Error: {e}")
+    st.error(f"Database error. Check DB_URL secret. Error: {e}")
 
 local_css()
 
@@ -336,11 +295,11 @@ if 'user_info' not in st.session_state:
 
 # --- AUTHENTICATION SCREEN ---
 if not st.session_state['logged_in']:
-    st.markdown("<h1 style='text-align: center; color: #818cf8; font-weight: 800; font-size: 2.5rem; margin-top: 20px;'>🎓 UniUyo Academic Support Hub</h1>", unsafe_allow_html=True)
-    st.markdown("<p style='text-align: center; color: #94a3b8; font-size: 1.1rem;'>Your personal CGPA engine, study materials, and academic task manager.</p>", unsafe_allow_html=True)
+    st.markdown("<h1 style='text-align: center; color: #818cf8; font-weight: 800; font-size: 2.2rem; margin-top: 10px;'>🎓 UniUyo Academic Hub</h1>", unsafe_allow_html=True)
+    st.markdown("<p style='text-align: center; color: #94a3b8; font-size: 1rem;'>Your personal CGPA engine, study materials, and academic task manager.</p>", unsafe_allow_html=True)
     st.write("---")
     
-    auth_mode = st.tabs(["🔐 Login", "📝 Register New Account"])
+    auth_mode = st.tabs(["🔐 Login", "📝 Register Account"])
 
     with auth_mode[0]:
         with st.form("login_form"):
@@ -350,7 +309,7 @@ if not st.session_state['logged_in']:
             submit_login = st.form_submit_button("Access Dashboard", use_container_width=True)
 
             if submit_login:
-                with st.spinner("Authenticating credentials..."):
+                with st.spinner("Authenticating..."):
                     conn = get_connection()
                     c = conn.cursor()
                     c.execute('SELECT * FROM users WHERE username = %s AND password = %s', (login_user, hash_password(login_pw)))
@@ -368,7 +327,7 @@ if not st.session_state['logged_in']:
 
     with auth_mode[1]:
         with st.form("signup_form"):
-            st.subheader("Create Your Account")
+            st.subheader("Create Account")
             new_user = st.text_input("Choose Username").strip()
             new_email = st.text_input("University Email").strip()
             new_dept = st.selectbox("Select Your Department", DEPTS_LIST)
@@ -380,19 +339,19 @@ if not st.session_state['logged_in']:
                 if new_pw != confirm_pw:
                     st.warning("Passwords do not match.")
                 elif not new_user or not new_email:
-                    st.warning("Please fill in all required fields.")
+                    st.warning("Please fill in all fields.")
                 else:
-                    with st.spinner("Creating your account..."):
+                    with st.spinner("Creating account..."):
                         conn = get_connection()
                         try:
                             conn.cursor().execute(
                                 'INSERT INTO users(username, email, password, department, usage_count) VALUES (%s,%s,%s,%s,%s)',
                                 (new_user, new_email, hash_password(new_pw), new_dept, 1))
                             conn.commit()
-                            st.success("Account created successfully! You can now log in.")
+                            st.success("Account created successfully! Please log in.")
                             send_uni_email(new_email, "Welcome to UniUyo Academic Hub!", f"Hello {new_user},\n\nWelcome to the platform! We are thrilled to support your academic journey.")
                         except IntegrityError:
-                            st.error("Username or Email already registered.")
+                            st.error("Username or Email already exists.")
                         finally:
                             conn.close()
 
@@ -404,33 +363,44 @@ else:
     check_task_reminders(username)
     cgpa = get_user_cgpa(username)
 
-    st.sidebar.title(f"Welcome, {username}")
-    st.sidebar.write(f"📍 Department: **{user_dept}**")
-
     conn = get_connection()
     c = conn.cursor()
     c.execute('SELECT points FROM users WHERE username = %s', (username,))
     my_points = c.fetchone()[0] or 0
     conn.close()
 
-    st.sidebar.markdown(f"<span class='tag-badge'>🌟 {my_points} Brain Points</span>", unsafe_allow_html=True)
-    st.sidebar.write("---")
+    # --- MAIN SCREEN NAVIGATION BAR ---
+    st.markdown(f"""
+        <div class="nav-card">
+            <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
+                <div>
+                    <h3 style="margin: 0; color: #818cf8; font-size: 1.3rem;">👋 Welcome, {username}</h3>
+                    <small style="color: #94a3b8;">📍 {user_dept} | <span class="tag-badge">🌟 {my_points} Brain Pts</span></small>
+                </div>
+            </div>
+        </div>
+    """, unsafe_allow_html=True)
 
-    # Cleaned Navigation Options
-    menu = [
-        "Dashboard", 
-        "GPA/CGPA Tracker", 
-        "Brain Games 🧠", 
-        "Study Resources", 
-        "Task Reminders", 
-        "About Developer"
-    ]
-    choice = st.sidebar.radio("Navigation Menu", menu)
+    nav_col1, nav_col2 = st.columns([3, 1])
+    with nav_col1:
+        menu_options = [
+            "📊 Dashboard", 
+            "📈 GPA/CGPA Tracker", 
+            "🧠 Brain Games", 
+            "📚 Study Resources", 
+            "📅 Task Reminders", 
+            "👨‍💻 About Developer"
+        ]
+        choice_raw = st.selectbox("📍 Select Navigation Page:", menu_options, label_visibility="collapsed")
+        # Strip icon prefix for logical matching
+        choice = choice_raw.split(" ", 1)[1] if " " in choice_raw else choice_raw
 
-    st.sidebar.write("---")
-    if st.sidebar.button("Log Out", use_container_width=True):
-        st.session_state['logged_in'] = False
-        st.rerun()
+    with nav_col2:
+        if st.button("🚪 Log Out", use_container_width=True):
+            st.session_state['logged_in'] = False
+            st.rerun()
+
+    st.write("---")
 
     # --- 1. DASHBOARD ---
     if choice == "Dashboard":
@@ -518,7 +488,7 @@ else:
                 st.markdown(f"<div class='opp-box' style='margin-top: 20px;'><h3 style='color: #818cf8; margin: 0;'>Cumulative GPA (CGPA): {cgpa:.2f}</h3><p style='color: #f1f5f9; margin-top: 5px; font-size: 1.1em;'>Class of Degree: {icon} {deg_class}</p></div>", unsafe_allow_html=True)
 
     # --- 3. BRAIN GAMES ---
-    elif choice == "Brain Games 🧠":
+    elif choice == "Brain Games":
         st.title("🧠 Daily Brain Games & Leaderboard")
         st.write("Solve daily challenges to climb the campus leaderboard!")
 
