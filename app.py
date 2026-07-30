@@ -180,6 +180,7 @@ def get_user_cgpa(username):
     return truncate_gpa(total_points / total_credits)
 
 # --- MODERN PREMIUM UI STYLING ---
+# --- MODERN PREMIUM UI STYLING (FIXED MOBILE NAV & TOP PADDING) ---
 def local_css():
     st.markdown("""
         <style>
@@ -191,6 +192,12 @@ def local_css():
         .stApp { 
             background: linear-gradient(135deg, #0b0f19 0%, #111827 50%, #0f172a 100%); 
             color: #f8fafc; 
+        }
+
+        /* 1. Remove Large Redundant Top Padding */
+        .block-container {
+            padding-top: 1rem !important;
+            padding-bottom: 2rem !important;
         }
         
         /* Sidebar Styling */
@@ -268,12 +275,13 @@ def local_css():
             margin-right: 8px; 
         }
 
-        /* Clean Streamlit Headers & Footers */
+        /* 2. Hide Footer/Menu while keeping Header & Navigation Icon visible */
         #MainMenu { visibility: hidden; }
         footer { visibility: hidden; }
-        header { visibility: hidden; }
+        header { background: transparent !important; }
         </style>
     """, unsafe_allow_html=True)
+    
 
 # --- APP INITIALIZATION ---
 try:
