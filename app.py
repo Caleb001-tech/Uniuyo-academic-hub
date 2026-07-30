@@ -179,8 +179,8 @@ def get_user_cgpa(username):
     if total_credits == 0: return 0.00
     return truncate_gpa(total_points / total_credits)
 
-# --- MODERN PREMIUM UI STYLING ---
-# --- MODERN PREMIUM UI STYLING (FIXED MOBILE NAV & TOP PADDING) ---
+
+# --- MODERN PREMIUM UI STYLING (MOBILE SIDEBAR & NAV ENHANCEMENTS) ---
 def local_css():
     st.markdown("""
         <style>
@@ -194,16 +194,38 @@ def local_css():
             color: #f8fafc; 
         }
 
-        /* 1. Remove Large Redundant Top Padding */
+        /* 1. Remove Top Space Gap */
         .block-container {
             padding-top: 1rem !important;
             padding-bottom: 2rem !important;
         }
         
-        /* Sidebar Styling */
+        /* 2. Make Mobile Navigation Button Obvious ("☰ Menu" Button) */
+        button[data-testid="baseButton-header"] {
+            background: linear-gradient(90deg, #6366f1 0%, #a855f7 100%) !important;
+            color: #ffffff !important;
+            border-radius: 20px !important;
+            padding: 6px 16px !important;
+            border: 1px solid rgba(255, 255, 255, 0.2) !important;
+            box-shadow: 0 4px 12px rgba(99, 102, 241, 0.4) !important;
+            font-weight: 700 !important;
+            font-size: 0.9rem !important;
+        }
+
+        /* Transform tiny arrow icon into visible text/icon */
+        button[data-testid="baseButton-header"]::after {
+            content: " ☰ Navigation";
+            font-size: 0.85rem;
+            font-weight: 700;
+            color: #ffffff;
+        }
+
+        /* 3. Reduce Mobile Sidebar Width (Doesn't cover whole screen) */
         [data-testid="stSidebar"] { 
-            background-color: rgba(15, 23, 42, 0.95) !important; 
-            border-right: 1px solid rgba(255, 255, 255, 0.08) !important; 
+            background-color: rgba(15, 23, 42, 0.98) !important; 
+            border-right: 1px solid rgba(255, 255, 255, 0.1) !important; 
+            max-width: 280px !important;
+            width: 75vw !important;
         }
         
         /* Typography Highlights */
@@ -252,11 +274,6 @@ def local_css():
             border: 1px solid rgba(255, 255, 255, 0.12) !important; 
             border-radius: 10px !important;
         }
-        
-        .stTextInput>div>div>input:focus, .stTextArea>div>div>textarea:focus { 
-            border-color: #a855f7 !important; 
-            box-shadow: 0 0 0 2px rgba(168, 85, 247, 0.2) !important; 
-        }
 
         /* Tag Badges */
         .tag-badge { 
@@ -268,19 +285,14 @@ def local_css():
             font-weight: 600; 
             border: 1px solid rgba(99, 102, 241, 0.3); 
         }
-        
-        .medal-badge { 
-            font-size: 1.4em; 
-            vertical-align: middle; 
-            margin-right: 8px; 
-        }
 
-        /* 2. Hide Footer/Menu while keeping Header & Navigation Icon visible */
+        /* Header Styling */
         #MainMenu { visibility: hidden; }
         footer { visibility: hidden; }
         header { background: transparent !important; }
         </style>
     """, unsafe_allow_html=True)
+                        
     
 
 # --- APP INITIALIZATION ---
