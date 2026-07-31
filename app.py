@@ -47,6 +47,9 @@ def initialize_db_tables():
                     last_calculated_gpa NUMERIC DEFAULT 0.00
                 )''')
 
+    # ADD THIS MIGRATION LINE FOR EXISTING USERS TABLES
+    c.execute('''ALTER TABLE users ADD COLUMN IF NOT EXISTS last_calculated_gpa NUMERIC DEFAULT 0.00''')
+
     c.execute('''CREATE TABLE IF NOT EXISTS tasks (
                     id SERIAL PRIMARY KEY, 
                     username TEXT, 
@@ -97,6 +100,7 @@ def initialize_db_tables():
     conn.commit()
     conn.close()
     return True
+    
 
 # --- HELPER FUNCTIONS ---
 def hash_password(password):
