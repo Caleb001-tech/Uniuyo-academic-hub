@@ -26,7 +26,7 @@ cloudinary.config(
     secure=True
 )
 
-# --- DATABASE SETUP ---
+# --- CACHED DATABASE CONNECTIONS (SPEED OPTIMIZATION) ---
 def get_connection():
     return psycopg2.connect(DB_URL)
 
@@ -47,7 +47,6 @@ def initialize_db_tables():
                     last_calculated_gpa NUMERIC DEFAULT 0.00
                 )''')
 
-    # ADD THIS MIGRATION LINE FOR EXISTING USERS TABLES
     c.execute('''ALTER TABLE users ADD COLUMN IF NOT EXISTS last_calculated_gpa NUMERIC DEFAULT 0.00''')
 
     c.execute('''CREATE TABLE IF NOT EXISTS tasks (
@@ -100,7 +99,6 @@ def initialize_db_tables():
     conn.commit()
     conn.close()
     return True
-    
 
 # --- HELPER FUNCTIONS ---
 def hash_password(password):
@@ -196,6 +194,9 @@ def get_last_calculated_gpa(username):
 # --- MODERN UI STYLING ---
 def local_css():
     st.markdown("""
+        <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+        <meta http-equiv="Pragma" content="no-cache">
+        <meta http-equiv="Expires" content="0">
         <style>
         @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
         
@@ -344,10 +345,23 @@ DEPTS_LIST = [
     "Sociology And Anthropology", "Software Engineering", "Statistics", "Theatre Arts", "Zoology"
 ]
 
+# --- REFRESH SESSION PERSISTENCE LOGIC ---
 if 'logged_in' not in st.session_state: 
     st.session_state['logged_in'] = False
 if 'user_info' not in st.session_state: 
     st.session_state['user_info'] = None
+
+# Auto-restore session on page refresh if URL contains ?user=...
+if not st.session_state['logged_in'] and "user" in st.query_params:
+    saved_username = st.query_params["user"]
+    conn = get_connection()
+    c = conn.cursor()
+    c.execute('SELECT * FROM users WHERE username = %s', (saved_username,))
+    recovered_user = c.fetchone()
+    conn.close()
+    if recovered_user:
+        st.session_state['logged_in'] = True
+        st.session_state['user_info'] = recovered_user
 
 # --- AUTHENTICATION SCREEN ---
 if not st.session_state['logged_in']:
@@ -375,6 +389,8 @@ if not st.session_state['logged_in']:
                         conn.commit()
                         st.session_state['logged_in'] = True
                         st.session_state['user_info'] = user_data
+                        # PERSIST USERNAME IN URL FOR REFRESHES
+                        st.query_params["user"] = login_user
                         st.success(f"Welcome back, {login_user}!")
                         st.rerun()
                     else:
@@ -411,6 +427,8 @@ if not st.session_state['logged_in']:
 
                             st.session_state['logged_in'] = True
                             st.session_state['user_info'] = created_user_data
+                            # PERSIST USERNAME IN URL FOR REFRESHES
+                            st.query_params["user"] = new_user
 
                             send_uni_email(new_email, "Welcome to UniUyo Academic Hub!", f"Hello {new_user},\n\nWelcome to the platform! We are thrilled to support your academic journey.")
 
@@ -458,12 +476,28 @@ else:
             "📅 Task Reminders", 
             "👨‍💻 About Developer"
         ]
-        choice_raw = st.selectbox("📍 Select Navigation Page:", menu_options, label_visibility="collapsed")
+        
+        # RESTORE PAGE FROM URL IF IT WAS SAVED
+        default_idx = 0
+        if "page" in st.query_params:
+            saved_p = st.query_params["page"]
+            for idx, opt in enumerate(menu_options):
+                if saved_p in opt:
+                    default_idx = idx
+                    break
+
+        choice_raw = st.selectbox("📍 Select Navigation Page:", menu_options, index=default_idx, label_visibility="collapsed")
         choice = choice_raw.split(" ", 1)[1] if " " in choice_raw else choice_raw
+        
+        # SAVE ACTIVE PAGE IN URL QUERY PARAMETER
+        st.query_params["page"] = choice
 
     with nav_col2:
         if st.button("🚪 Log Out", use_container_width=True):
             st.session_state['logged_in'] = False
+            st.session_state['user_info'] = None
+            # CLEAR URL QUERY PARAMETERS ON LOGOUT
+            st.query_params.clear()
             st.rerun()
 
     st.write("---")
@@ -473,14 +507,15 @@ else:
         st.title("📊 Academic Dashboard")
         st.write("Overview of your academic standing, usage metrics, and smart performance insights.")
         
-        col1, col2, col3, col4 = st.columns(4)
         conn = get_connection()
         c = conn.cursor()
+
         c.execute("SELECT COUNT(*) FROM tasks WHERE username = %s AND reminded_0d = 0", (username,))
         pending_tasks = c.fetchone()[0]
         c.execute("SELECT usage_count FROM users WHERE username = %s", (username,))
         current_usage = c.fetchone()[0]
 
+        col1, col2, col3, col4 = st.columns(4)
         deg_class, icon, _ = get_class_of_degree(cgpa)
         col1.metric("Overall CGPA", f"{cgpa:.2f}")
         col2.metric("Last Term GPA", f"{last_gpa:.2f}" if last_gpa > 0 else "N/A")
@@ -489,7 +524,7 @@ else:
         
         st.info(f"**Current Standing:** {icon} {deg_class}")
 
-        # --- SMART PREDICTOR & ADVISOR (BUILT-IN ON DASHBOARD) ---
+        # --- SMART PREDICTOR & ADVISOR ---
         st.write("---")
         st.subheader("🤖 Smart Academic Advisor & Target Predictor")
 
@@ -510,11 +545,8 @@ else:
 
         # B. DYNAMIC TARGET PREDICTOR
         st.markdown("### 🔮 Target CGPA Predictor")
-        conn = get_connection()
-        c = conn.cursor()
         c.execute('SELECT grade, credit FROM course_grades WHERE username = %s', (username,))
         saved_courses = c.fetchall()
-        
 
         total_earned_points = sum(calculate_points(g, cr) for g, cr in saved_courses) if saved_courses else 0
         total_passed_credits = sum(cr for _, cr in saved_courses) if saved_courses else 0
@@ -594,6 +626,7 @@ else:
             admin_col1, admin_col2 = st.columns(2)
             admin_col1.metric("Registered Students", total_users)
             admin_col2.metric("Total App Visits", total_app_usages)
+
         conn.close()
 
     # --- 2. GPA / CGPA TRACKER ---
@@ -632,7 +665,6 @@ else:
                         total_cr = sum(credits)
                         res = truncate_gpa(total_pts / total_cr) if total_cr > 0 else 0.00
                         
-                        # AUTOMATICALLY SAVE IN BACKGROUND FOR DASHBOARD PREDICTOR
                         save_last_calculated_gpa(username, res)
                         
                         deg_class, icon, msg_type = get_class_of_degree(res)
