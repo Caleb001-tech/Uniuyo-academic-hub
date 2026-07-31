@@ -209,6 +209,33 @@ def local_css():
             margin-bottom: 20px !important;
         }
 
+        /* ENHANCED TAB NAVIGATION SEPARATION */
+        .stTabs [data-baseweb="tab-list"] {
+            gap: 16px !important;
+            background: rgba(15, 23, 42, 0.6) !important;
+            padding: 8px !important;
+            border-radius: 14px !important;
+            border: 1px solid rgba(255, 255, 255, 0.08) !important;
+        }
+
+        .stTabs [data-baseweb="tab"] {
+            height: 48px !important;
+            border-radius: 10px !important;
+            padding: 0px 20px !important;
+            background-color: rgba(30, 41, 59, 0.5) !important;
+            color: #94a3b8 !important;
+            font-weight: 700 !important;
+            font-size: 0.92rem !important;
+            border: 1px solid rgba(255, 255, 255, 0.05) !important;
+        }
+
+        .stTabs [aria-selected="true"] {
+            background: linear-gradient(90deg, #6366f1 0%, #a855f7 100%) !important;
+            color: #ffffff !important;
+            border: none !important;
+            box-shadow: 0 4px 12px rgba(99, 102, 241, 0.4) !important;
+        }
+
         /* Typography Highlights */
         h1, h2, h3, h4, h5, h6 { 
             color: #ffffff !important; 
@@ -329,7 +356,7 @@ if not st.session_state['logged_in']:
         with st.form("signup_form"):
             st.subheader("Create Account")
             new_user = st.text_input("Choose Username").strip()
-            new_email = st.text_input("University Email").strip()
+            new_email = st.text_input("Email").strip()
             new_dept = st.selectbox("Select Your Department", DEPTS_LIST)
             new_pw = st.text_input("Create Password", type="password")
             confirm_pw = st.text_input("Confirm Password", type="password")
@@ -392,7 +419,6 @@ else:
             "👨‍💻 About Developer"
         ]
         choice_raw = st.selectbox("📍 Select Navigation Page:", menu_options, label_visibility="collapsed")
-        # Strip icon prefix for logical matching
         choice = choice_raw.split(" ", 1)[1] if " " in choice_raw else choice_raw
 
     with nav_col2:
@@ -437,41 +463,60 @@ else:
     # --- 2. GPA / CGPA TRACKER ---
     elif choice == "GPA/CGPA Tracker":
         st.title("📊 Result & Performance Engine")
-        tab1, tab2 = st.tabs(["⚡ Semester GPA Calculator", "💾 Save Courses (Build CGPA)"])
+        
+        # CLEARLY SEPARATED TABS WITH REVISED TITLES
+        tab1, tab2 = st.tabs([
+            "⚡ Semester GPA Calculator", 
+            "🎓 Cumulative GPA (CGPA) Calculator"
+        ])
 
         with tab1:
-            st.subheader("Calculate Semester GPA")
-            num_courses = st.number_input("Number of Courses", 1, 15, 5)
-            grades, credits = [], []
-            cols = st.columns(2)
-            for i in range(num_courses):
-                with cols[0]: grades.append(st.selectbox(f"Course {i + 1} Grade", ['A', 'B', 'C', 'D', 'E', 'F'], key=f"g_{i}"))
-                with cols[1]: credits.append(st.number_input(f"Course {i + 1} Credits", 1, 6, 3, key=f"c_{i}"))
+            st.subheader("Semester GPA Calculator")
+            st.info("💡 **Quick Calculation:** Enter the number of courses taken this semester to compute your single-semester Grade Point Average (GPA).")
+            
+            # SET DEFAULT TO 0 SO STUDENTS MUST ENTER THEIR OWN COURSE COUNT
+            num_courses = st.number_input("Enter Number of Courses Taken", min_value=0, max_value=15, value=0)
+            
+            if num_courses > 0:
+                grades, credits = [], []
+                cols = st.columns(2)
+                for i in range(num_courses):
+                    with cols[0]: grades.append(st.selectbox(f"Course {i + 1} Grade", ['A', 'B', 'C', 'D', 'E', 'F'], key=f"g_{i}"))
+                    with cols[1]: credits.append(st.number_input(f"Course {i + 1} Credit Units", 1, 6, 3, key=f"c_{i}"))
 
-            if st.button("Calculate GPA", use_container_width=True):
-                st.balloons()
-                total_pts = sum(calculate_points(g, c) for g, c in zip(grades, credits))
-                total_cr = sum(credits)
-                res = truncate_gpa(total_pts / total_cr) if total_cr > 0 else 0.00
-                deg_class, icon, msg_type = get_class_of_degree(res)
-                st.success(f"**Calculated Semester GPA: {res:.2f}** | {icon} {deg_class}")
+                if st.button("Calculate Semester GPA", use_container_width=True):
+                    st.balloons()
+                    total_pts = sum(calculate_points(g, c) for g, c in zip(grades, credits))
+                    total_cr = sum(credits)
+                    res = truncate_gpa(total_pts / total_cr) if total_cr > 0 else 0.00
+                    deg_class, icon, msg_type = get_class_of_degree(res)
+                    st.success(f"**Calculated Semester GPA: {res:.2f}** | {icon} {deg_class}")
+            else:
+                st.caption("👈 Enter a number greater than 0 above to reveal course grade inputs.")
 
         with tab2:
-            st.subheader("Record Course Performance")
+            st.subheader("Cumulative GPA (CGPA) Ledger")
+            st.info("📌 **How to build your official CGPA:** Save all your registered courses from both 1st and 2nd semesters (across 100L, 200L, etc.) below. The system automatically calculates and updates your overall Cumulative GPA (CGPA) in real time.")
+            
             with st.form("add_course"):
-                c_code = st.text_input("Course Code (e.g., MTH111)")
+                st.markdown("##### ➕ Record Course Grade")
+                c_code = st.text_input("Course Code (e.g., MTH111, CHM101)")
                 c1, c2 = st.columns(2)
-                c_grade = c1.selectbox("Grade", ['A', 'B', 'C', 'D', 'E', 'F'])
-                c_credit = c2.number_input("Credit Units", 1, 6, 3)
-                if st.form_submit_button("Save Course Record", use_container_width=True) and c_code:
-                    conn = get_connection()
-                    conn.cursor().execute(
-                        'INSERT INTO course_grades (username, course_code, grade, credit) VALUES (%s,%s,%s,%s)',
-                        (username, c_code, c_grade, c_credit))
-                    conn.commit()
-                    conn.close()
-                    st.success(f"Saved {c_code} to your academic ledger!")
-                    st.rerun()
+                c_grade = c1.selectbox("Grade Obtained", ['A', 'B', 'C', 'D', 'E', 'F'])
+                c_credit = c2.number_input("Credit Unit", 1, 6, 3)
+                
+                if st.form_submit_button("Save Course to CGPA Ledger", use_container_width=True):
+                    if c_code.strip():
+                        conn = get_connection()
+                        conn.cursor().execute(
+                            'INSERT INTO course_grades (username, course_code, grade, credit) VALUES (%s,%s,%s,%s)',
+                            (username, c_code.strip().upper(), c_grade, c_credit))
+                        conn.commit()
+                        conn.close()
+                        st.success(f"Successfully saved {c_code.upper()} to your academic record!")
+                        st.rerun()
+                    else:
+                        st.error("Please enter a valid Course Code.")
 
             conn = get_connection()
             c = conn.cursor()
@@ -480,12 +525,14 @@ else:
             conn.close()
 
             if saved:
-                st.write("### Recorded Courses")
+                st.write("### 📖 Your Saved Courses Ledger")
                 for crs in saved:
                     st.markdown(f"<div style='background: rgba(255,255,255,0.04); padding: 12px; border-radius: 8px; margin-bottom: 6px; border: 1px solid rgba(255,255,255,0.08);'>📖 <b>{crs[0]}</b> | Grade: <b>{crs[1]}</b> | Credit Units: <b>{crs[2]}</b></div>", unsafe_allow_html=True)
                 
                 deg_class, icon, _ = get_class_of_degree(cgpa)
-                st.markdown(f"<div class='opp-box' style='margin-top: 20px;'><h3 style='color: #818cf8; margin: 0;'>Cumulative GPA (CGPA): {cgpa:.2f}</h3><p style='color: #f1f5f9; margin-top: 5px; font-size: 1.1em;'>Class of Degree: {icon} {deg_class}</p></div>", unsafe_allow_html=True)
+                st.markdown(f"<div class='opp-box' style='margin-top: 20px;'><h3 style='color: #818cf8; margin: 0;'>Your Overall Cumulative GPA (CGPA): {cgpa:.2f}</h3><p style='color: #f1f5f9; margin-top: 5px; font-size: 1.1em;'>Class of Degree: {icon} {deg_class}</p></div>", unsafe_allow_html=True)
+            else:
+                st.warning("No courses saved yet. Enter and save your first course above to build your CGPA record.")
 
     # --- 3. BRAIN GAMES ---
     elif choice == "Brain Games":
