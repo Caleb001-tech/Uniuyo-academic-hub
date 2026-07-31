@@ -43,7 +43,8 @@ def initialize_db_tables():
                     department TEXT, 
                     usage_count INTEGER DEFAULT 0, 
                     profile_pic_url TEXT, 
-                    points INTEGER DEFAULT 0
+                    points INTEGER DEFAULT 0,
+                    last_calculated_gpa NUMERIC DEFAULT 0.00
                 )''')
 
     c.execute('''CREATE TABLE IF NOT EXISTS tasks (
@@ -174,7 +175,21 @@ def get_user_cgpa(username):
     if total_credits == 0: return 0.00
     return truncate_gpa(total_points / total_credits)
 
-# --- MODERN UI STYLING (FIXED FORM SUBMIT BUTTON GRADIENTS) ---
+def save_last_calculated_gpa(username, gpa_val):
+    conn = get_connection()
+    conn.cursor().execute('UPDATE users SET last_calculated_gpa = %s WHERE username = %s', (gpa_val, username))
+    conn.commit()
+    conn.close()
+
+def get_last_calculated_gpa(username):
+    conn = get_connection()
+    c = conn.cursor()
+    c.execute('SELECT last_calculated_gpa FROM users WHERE username = %s', (username,))
+    row = c.fetchone()
+    conn.close()
+    return float(row[0]) if row and row[0] is not None else 0.00
+
+# --- MODERN UI STYLING ---
 def local_css():
     st.markdown("""
         <style>
@@ -254,7 +269,7 @@ def local_css():
             box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.3) !important;
         }
 
-        /* GRADIENT ACCENT BUTTONS (STANDARD, DOWNLOAD, & FORM SUBMIT) */
+        /* GRADIENT ACCENT BUTTONS */
         .stButton>button, 
         .stDownloadButton>button,
         [data-testid="stFormSubmitButton"]>button {
@@ -298,8 +313,6 @@ def local_css():
         header { background: transparent !important; }
         </style>
     """, unsafe_allow_html=True)
-    
-
 
 # --- APP INITIALIZATION ---
 try:
@@ -368,7 +381,7 @@ if not st.session_state['logged_in']:
         with st.form("signup_form"):
             st.subheader("Create Account")
             new_user = st.text_input("Choose Username").strip()
-            new_email = st.text_input("Email").strip()
+            new_email = st.text_input("University Email").strip()
             new_dept = st.selectbox("Select Your Department", DEPTS_LIST)
             new_pw = st.text_input("Create Password", type="password")
             confirm_pw = st.text_input("Confirm Password", type="password")
@@ -383,32 +396,26 @@ if not st.session_state['logged_in']:
                     with st.spinner("Creating account & setting up your dashboard..."):
                         conn = get_connection()
                         try:
-                            # 1. Insert the new user record
                             c = conn.cursor()
                             c.execute(
                                 'INSERT INTO users(username, email, password, department, usage_count) VALUES (%s,%s,%s,%s,%s)',
                                 (new_user, new_email, hash_password(new_pw), new_dept, 1))
                             conn.commit()
 
-                            # 2. Fetch the newly created user profile
                             c.execute('SELECT * FROM users WHERE username = %s', (new_user,))
                             created_user_data = c.fetchone()
 
-                            # 3. Automatically log them in in session state
                             st.session_state['logged_in'] = True
                             st.session_state['user_info'] = created_user_data
 
-                            # 4. Send welcome email (optional/background)
                             send_uni_email(new_email, "Welcome to UniUyo Academic Hub!", f"Hello {new_user},\n\nWelcome to the platform! We are thrilled to support your academic journey.")
 
-                            # 5. Instantly refresh directly into the main dashboard
                             st.rerun()
 
                         except IntegrityError:
                             st.error("Username or Email already exists.")
                         finally:
                             conn.close()
-            
 
 # --- MAIN APP (LOGGED IN) ---
 else:
@@ -417,6 +424,7 @@ else:
 
     check_task_reminders(username)
     cgpa = get_user_cgpa(username)
+    last_gpa = get_last_calculated_gpa(username)
 
     conn = get_connection()
     c = conn.cursor()
@@ -459,9 +467,9 @@ else:
     # --- 1. DASHBOARD ---
     if choice == "Dashboard":
         st.title("📊 Academic Dashboard")
-        st.write("Overview of your current academic standing and platform usage.")
+        st.write("Overview of your academic standing, usage metrics, and smart performance insights.")
         
-        col1, col2, col3 = st.columns(3)
+        col1, col2, col3, col4 = st.columns(4)
         conn = get_connection()
         c = conn.cursor()
         c.execute("SELECT COUNT(*) FROM tasks WHERE username = %s AND reminded_0d = 0", (username,))
@@ -470,11 +478,107 @@ else:
         current_usage = c.fetchone()[0]
 
         deg_class, icon, _ = get_class_of_degree(cgpa)
-        col1.metric("Current CGPA", f"{cgpa:.2f}")
-        col2.metric("Active Reminders", pending_tasks)
-        col3.metric("Platform Visits", current_usage)
+        col1.metric("Overall CGPA", f"{cgpa:.2f}")
+        col2.metric("Last Term GPA", f"{last_gpa:.2f}" if last_gpa > 0 else "N/A")
+        col3.metric("Active Reminders", pending_tasks)
+        col4.metric("Platform Visits", current_usage)
         
-        st.info(f"**Academic Standing:** {icon} {deg_class}")
+        st.info(f"**Current Standing:** {icon} {deg_class}")
+
+        # --- SMART PREDICTOR & ADVISOR (BUILT-IN ON DASHBOARD) ---
+        st.write("---")
+        st.subheader("🤖 Smart Academic Advisor & Target Predictor")
+
+        # A. LAST SEMESTER GPA ADVICE
+        if last_gpa > 0:
+            last_class, last_icon, _ = get_class_of_degree(last_gpa)
+            st.markdown(f"""
+            <div class="post-box" style="border-left: 5px solid #818cf8;">
+                <h4 style="color: #818cf8;">⚡ Last Calculated Semester Performance: {last_gpa:.2f} ({last_icon} {last_class})</h4>
+                <p style="color: #cbd5e1; margin-bottom: 0;">
+                {"🔥 Outstanding semester! Keep up your study habits and maintain this pace." if last_gpa >= 4.50 else
+                 "👍 Great semester performance! Focus on turning your B grades into A grades next term." if last_gpa >= 3.50 else
+                 "📈 Fair semester result. Concentrate on 3-credit courses and review past questions to boost your GPA next term." if last_gpa >= 2.40 else
+                 "⚠️ Semester performance fell below expectations. Utilize study resources and create structured task reminders to recover."}
+                </p>
+            </div>
+            """, unsafe_allow_html=True)
+
+        # B. DYNAMIC TARGET PREDICTOR
+        st.markdown("### 🔮 Target CGPA Predictor")
+        conn = get_connection()
+        c = conn.cursor()
+        c.execute('SELECT grade, credit FROM course_grades WHERE username = %s', (username,))
+        saved_courses = c.fetchall()
+        conn.close()
+
+        total_earned_points = sum(calculate_points(g, cr) for g, cr in saved_courses) if saved_courses else 0
+        total_passed_credits = sum(cr for _, cr in saved_courses) if saved_courses else 0
+
+        p_col1, p_col2 = st.columns(2)
+        with p_col1:
+            target_cgpa_goal = st.number_input("Desired Graduation CGPA Goal", min_value=1.50, max_value=5.00, value=4.50, step=0.05)
+        with p_col2:
+            rem_credits_input = st.text_input("Estimated Remaining Credit Units", placeholder="e.g. 60...").strip()
+
+        if rem_credits_input and rem_credits_input.isdigit() and int(rem_credits_input) > 0:
+            rem_credits = int(rem_credits_input)
+            total_projected_credits = total_passed_credits + rem_credits
+            needed_total_points = target_cgpa_goal * total_projected_credits
+            needed_future_points = needed_total_points - total_earned_points
+            req_future_gpa = needed_future_points / rem_credits
+
+            if req_future_gpa > 5.00:
+                st.error(f"⚠️ **Target Unattainable:** To reach **{target_cgpa_goal:.2f} CGPA**, you would need an average of **{req_future_gpa:.2f} GPA** across remaining credits. Consider setting a revised realistic target (e.g., Second Class Upper).")
+            elif req_future_gpa <= 0:
+                st.success(f"🎉 **Target Secured!** Your current point ledger already locks in a **{target_cgpa_goal:.2f} CGPA**!")
+            else:
+                deg_class_target, target_icon, _ = get_class_of_degree(target_cgpa_goal)
+                st.success(f"🎯 To graduate with a **{target_cgpa_goal:.2f} CGPA** ({target_icon} {deg_class_target}), you must maintain an average GPA of **{req_future_gpa:.2f}** across your remaining **{rem_credits} credit units**.")
+
+        # C. CGPA STRATEGY ADVISOR
+        st.markdown("### 💡 Academic Growth Advisor")
+        if cgpa >= 4.50:
+            st.markdown("""
+            <div class="post-box" style="border-left: 5px solid #22c55e;">
+                <h4 style="color: #22c55e;">🥇 Outstanding Momentum (First Class Standing)</h4>
+                <ul>
+                    <li><b>Prioritize Heavy Credit Courses:</b> Focus your main study hours on 3 & 4 credit courses.</li>
+                    <li><b>Active Recall:</b> Practice past question papers from the Resource Vault rather than re-reading slides.</li>
+                    <li><b>Consistency:</b> Maintain steady daily study sessions to prevent exam burnout.</li>
+                </ul>
+            </div>
+            """, unsafe_allow_html=True)
+        elif cgpa >= 3.50:
+            st.markdown("""
+            <div class="post-box" style="border-left: 5px solid #6366f1;">
+                <h4 style="color: #818cf8;">🥈 Strong Academic Standing (Second Class Upper)</h4>
+                <ul>
+                    <li><b>Push B's to A's:</b> Target courses where you score 65–69%. Shifting 2 courses per term pushes you into First Class range.</li>
+                    <li><b>Continuous Assessment (CA) Buffer:</b> Aim for 25+/30 in CA and lab tests to lighten final exam pressure.</li>
+                </ul>
+            </div>
+            """, unsafe_allow_html=True)
+        elif cgpa >= 2.40:
+            st.markdown("""
+            <div class="post-box" style="border-left: 5px solid #f59e0b;">
+                <h4 style="color: #f59e0b;">🥉 Growth Opportunity (Second Class Lower)</h4>
+                <ul>
+                    <li><b>Eliminate F & E Grades:</b> Aim for a minimum of C grade across all registered subjects.</li>
+                    <li><b>Task Reminders:</b> Use Task Reminders to submit assignments early for maximum CA points.</li>
+                </ul>
+            </div>
+            """, unsafe_allow_html=True)
+        else:
+            st.markdown("""
+            <div class="post-box" style="border-left: 5px solid #ef4444;">
+                <h4 style="color: #ef4444;">⚠️ Academic Recovery Guidance</h4>
+                <ul>
+                    <li><b>Consult Course Lecturers:</b> Meet your departmental advisors for direct academic guidance.</li>
+                    <li><b>Daily Study Routine:</b> Commit 2 uninterrupted hours daily to foundational topics.</li>
+                </ul>
+            </div>
+            """, unsafe_allow_html=True)
 
         if username == ADMIN_USERNAME:
             st.write("---")
@@ -492,7 +596,6 @@ else:
     elif choice == "GPA/CGPA Tracker":
         st.title("📊 Result & Performance Engine")
         
-        # CLEARLY SEPARATED TABS WITH REVISED TITLES
         tab1, tab2 = st.tabs([
             "⚡ Semester GPA Calculator", 
             "🎓 Cumulative GPA (CGPA) Calculator"
@@ -502,10 +605,8 @@ else:
             st.subheader("Semester GPA Calculator")
             st.info("💡 **Quick Calculation:** Enter the number of courses taken this semester to compute your single-semester Grade Point Average (GPA).")
             
-            # BLANK INPUT FOR NUMBER OF COURSES
             num_courses_input = st.text_input("Enter Number of Courses Taken", placeholder="Type number of courses (e.g., 5)...").strip()
             
-            # Validate if user entered a valid number
             if num_courses_input and num_courses_input.isdigit() and int(num_courses_input) > 0:
                 num_courses = int(num_courses_input)
                 grades, credits = [], []
@@ -515,12 +616,10 @@ else:
                     with cols[0]: 
                         grades.append(st.selectbox(f"Course {i + 1} Grade", ['A', 'B', 'C', 'D', 'E', 'F'], key=f"g_{i}"))
                     with cols[1]: 
-                        # BLANK INPUT FOR CREDIT UNITS
                         c_unit = st.text_input(f"Course {i + 1} Credit Units", placeholder="e.g., 3", key=f"c_{i}").strip()
                         credits.append(int(c_unit) if c_unit.isdigit() else 0)
 
                 if st.button("Calculate Semester GPA", use_container_width=True):
-                    # Ensure all credit units have been filled out properly
                     if any(c == 0 for c in credits):
                         st.warning("⚠️ Please fill in valid credit units for all courses above.")
                     else:
@@ -528,6 +627,10 @@ else:
                         total_pts = sum(calculate_points(g, c) for g, c in zip(grades, credits))
                         total_cr = sum(credits)
                         res = truncate_gpa(total_pts / total_cr) if total_cr > 0 else 0.00
+                        
+                        # AUTOMATICALLY SAVE IN BACKGROUND FOR DASHBOARD PREDICTOR
+                        save_last_calculated_gpa(username, res)
+                        
                         deg_class, icon, msg_type = get_class_of_degree(res)
                         st.success(f"**Calculated Semester GPA: {res:.2f}** | {icon} {deg_class}")
             elif num_courses_input:
