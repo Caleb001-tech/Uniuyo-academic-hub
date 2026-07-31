@@ -352,11 +352,11 @@ if not st.session_state['logged_in']:
                         st.error("Invalid Username or Password.")
                     conn.close()
 
-    with auth_mode[1]:
+        with auth_mode[1]:
         with st.form("signup_form"):
             st.subheader("Create Account")
             new_user = st.text_input("Choose Username").strip()
-            new_email = st.text_input("Email").strip()
+            new_email = st.text_input("University Email").strip()
             new_dept = st.selectbox("Select Your Department", DEPTS_LIST)
             new_pw = st.text_input("Create Password", type="password")
             confirm_pw = st.text_input("Confirm Password", type="password")
@@ -368,19 +368,35 @@ if not st.session_state['logged_in']:
                 elif not new_user or not new_email:
                     st.warning("Please fill in all fields.")
                 else:
-                    with st.spinner("Creating account..."):
+                    with st.spinner("Creating account & setting up your dashboard..."):
                         conn = get_connection()
                         try:
-                            conn.cursor().execute(
+                            # 1. Insert the new user record
+                            c = conn.cursor()
+                            c.execute(
                                 'INSERT INTO users(username, email, password, department, usage_count) VALUES (%s,%s,%s,%s,%s)',
                                 (new_user, new_email, hash_password(new_pw), new_dept, 1))
                             conn.commit()
-                            st.success("Account created successfully! Please log in.")
+
+                            # 2. Fetch the newly created user profile
+                            c.execute('SELECT * FROM users WHERE username = %s', (new_user,))
+                            created_user_data = c.fetchone()
+
+                            # 3. Automatically log them in in session state
+                            st.session_state['logged_in'] = True
+                            st.session_state['user_info'] = created_user_data
+
+                            # 4. Send welcome email (optional/background)
                             send_uni_email(new_email, "Welcome to UniUyo Academic Hub!", f"Hello {new_user},\n\nWelcome to the platform! We are thrilled to support your academic journey.")
+
+                            # 5. Instantly refresh directly into the main dashboard
+                            st.rerun()
+
                         except IntegrityError:
                             st.error("Username or Email already exists.")
                         finally:
                             conn.close()
+            
 
 # --- MAIN APP (LOGGED IN) ---
 else:
