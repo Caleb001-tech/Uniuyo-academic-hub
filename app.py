@@ -352,11 +352,11 @@ if not st.session_state['logged_in']:
                         st.error("Invalid Username or Password.")
                     conn.close()
 
-        with auth_mode[1]:
+    with auth_mode[1]:
         with st.form("signup_form"):
             st.subheader("Create Account")
             new_user = st.text_input("Choose Username").strip()
-            new_email = st.text_input("University Email").strip()
+            new_email = st.text_input("Email").strip()
             new_dept = st.selectbox("Select Your Department", DEPTS_LIST)
             new_pw = st.text_input("Create Password", type="password")
             confirm_pw = st.text_input("Confirm Password", type="password")
