@@ -174,7 +174,7 @@ def get_user_cgpa(username):
     if total_credits == 0: return 0.00
     return truncate_gpa(total_points / total_credits)
 
-# --- MODERN UI STYLING ---
+# --- MODERN UI STYLING (FIXED FORM SUBMIT BUTTON GRADIENTS) ---
 def local_css():
     st.markdown("""
         <style>
@@ -254,15 +254,25 @@ def local_css():
             box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.3) !important;
         }
 
-        /* Gradient Accent Buttons */
-        .stButton>button, .stDownloadButton>button {
+        /* GRADIENT ACCENT BUTTONS (STANDARD, DOWNLOAD, & FORM SUBMIT) */
+        .stButton>button, 
+        .stDownloadButton>button,
+        [data-testid="stFormSubmitButton"]>button {
             border-radius: 12px !important; 
             background: linear-gradient(90deg, #6366f1 0%, #a855f7 100%) !important; 
             color: #ffffff !important;
             border: none !important; 
-            font-weight: 600 !important; 
-            padding: 0.6rem 1.2rem !important; 
+            font-weight: 700 !important; 
+            padding: 0.65rem 1.2rem !important; 
             box-shadow: 0 4px 14px 0 rgba(99, 102, 241, 0.35) !important;
+            transition: all 0.25s ease-in-out !important;
+        }
+
+        .stButton>button:hover, 
+        .stDownloadButton>button:hover,
+        [data-testid="stFormSubmitButton"]>button:hover {
+            transform: translateY(-2px) !important;
+            box-shadow: 0 6px 20px 0 rgba(168, 85, 247, 0.45) !important;
         }
 
         /* Inputs */
@@ -288,6 +298,8 @@ def local_css():
         header { background: transparent !important; }
         </style>
     """, unsafe_allow_html=True)
+    
+
 
 # --- APP INITIALIZATION ---
 try:
