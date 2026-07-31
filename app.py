@@ -502,25 +502,38 @@ else:
             st.subheader("Semester GPA Calculator")
             st.info("💡 **Quick Calculation:** Enter the number of courses taken this semester to compute your single-semester Grade Point Average (GPA).")
             
-            # SET DEFAULT TO 0 SO STUDENTS MUST ENTER THEIR OWN COURSE COUNT
-            num_courses = st.number_input("Enter Number of Courses Taken", min_value=0, max_value=15, value=0)
+            # BLANK INPUT FOR NUMBER OF COURSES
+            num_courses_input = st.text_input("Enter Number of Courses Taken", placeholder="Type number of courses (e.g., 5)...").strip()
             
-            if num_courses > 0:
+            # Validate if user entered a valid number
+            if num_courses_input and num_courses_input.isdigit() and int(num_courses_input) > 0:
+                num_courses = int(num_courses_input)
                 grades, credits = [], []
                 cols = st.columns(2)
+                
                 for i in range(num_courses):
-                    with cols[0]: grades.append(st.selectbox(f"Course {i + 1} Grade", ['A', 'B', 'C', 'D', 'E', 'F'], key=f"g_{i}"))
-                    with cols[1]: credits.append(st.number_input(f"Course {i + 1} Credit Units", 1, 6, 3, key=f"c_{i}"))
+                    with cols[0]: 
+                        grades.append(st.selectbox(f"Course {i + 1} Grade", ['A', 'B', 'C', 'D', 'E', 'F'], key=f"g_{i}"))
+                    with cols[1]: 
+                        # BLANK INPUT FOR CREDIT UNITS
+                        c_unit = st.text_input(f"Course {i + 1} Credit Units", placeholder="e.g., 3", key=f"c_{i}").strip()
+                        credits.append(int(c_unit) if c_unit.isdigit() else 0)
 
                 if st.button("Calculate Semester GPA", use_container_width=True):
-                    st.balloons()
-                    total_pts = sum(calculate_points(g, c) for g, c in zip(grades, credits))
-                    total_cr = sum(credits)
-                    res = truncate_gpa(total_pts / total_cr) if total_cr > 0 else 0.00
-                    deg_class, icon, msg_type = get_class_of_degree(res)
-                    st.success(f"**Calculated Semester GPA: {res:.2f}** | {icon} {deg_class}")
+                    # Ensure all credit units have been filled out properly
+                    if any(c == 0 for c in credits):
+                        st.warning("⚠️ Please fill in valid credit units for all courses above.")
+                    else:
+                        st.balloons()
+                        total_pts = sum(calculate_points(g, c) for g, c in zip(grades, credits))
+                        total_cr = sum(credits)
+                        res = truncate_gpa(total_pts / total_cr) if total_cr > 0 else 0.00
+                        deg_class, icon, msg_type = get_class_of_degree(res)
+                        st.success(f"**Calculated Semester GPA: {res:.2f}** | {icon} {deg_class}")
+            elif num_courses_input:
+                st.error("Please enter a valid positive number for courses.")
             else:
-                st.caption("👈 Enter a number greater than 0 above to reveal course grade inputs.")
+                st.caption("👈 Type the number of courses taken above to reveal the grade inputs.")
 
         with tab2:
             st.subheader("Cumulative GPA (CGPA) Ledger")
