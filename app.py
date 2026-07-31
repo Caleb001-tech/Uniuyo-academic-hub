@@ -514,7 +514,7 @@ else:
         c = conn.cursor()
         c.execute('SELECT grade, credit FROM course_grades WHERE username = %s', (username,))
         saved_courses = c.fetchall()
-        conn.close()
+        
 
         total_earned_points = sum(calculate_points(g, cr) for g, cr in saved_courses) if saved_courses else 0
         total_passed_credits = sum(cr for _, cr in saved_courses) if saved_courses else 0
