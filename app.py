@@ -194,10 +194,8 @@ def get_last_calculated_gpa(username):
 # --- MODERN UI STYLING ---
 def local_css():
     st.markdown("""
-        <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
-        <meta http-equiv="Pragma" content="no-cache">
-        <meta http-equiv="Expires" content="0">
         <style>
+    
         @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
         
         * { font-family: 'Plus Jakarta Sans', sans-serif; }
